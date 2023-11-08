@@ -109,7 +109,7 @@ bool WriteImage(TcpClientSocket* tcpClient, const char* path, int size) {
 }
 
 extern "C" __declspec(dllexport)
-int GetImage(const  char* host, short port, const  char* fileName, const char* savePath) {
+int GetImage(const  char* host, short port,const char* dir, const  char* fileName, const char* savePath) {
 	TcpClientSocket tcpClient(host, port);
 	tcpClient.openConnection();
 
@@ -128,7 +128,8 @@ int GetImage(const  char* host, short port, const  char* fileName, const char* s
 
 	char* cmd = new char[BUFFER_SIZE];
 	ZeroMemory(cmd, BUFFER_SIZE);
-	strcpy(cmd, "ProductPic\\\r\n");
+	strcpy(cmd, dir);
+	strcat(cmd, "\r\n");
 	strcat(cmd, fileName);
 	strcat(cmd, "\r\n");
 	if (!tcpClient.sendData(cmd, strlen(cmd))) {
@@ -170,7 +171,6 @@ int GetImage(const  char* host, short port, const  char* fileName, const char* s
 	cmd[0xd] = 0x1;
 	cmd[0x14] = 0x1;
 	cmd[0x155] = 0x1;
-	const char* dir = "ProductPic\\";
 	memcpy(&cmd[0x15], fileName, strlen(fileName));
 	memcpy(&cmd[0x8d], dir, strlen(dir));
 	memcpy(&cmd[0xf1], dir, strlen(dir));

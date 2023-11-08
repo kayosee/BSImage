@@ -77,12 +77,16 @@ class TcpSocket : public Socket {
             int start = 0;
             int ret = 0;
             do {
-                ret = recv(_conn, ((char*)buf + start), 2, 0);
+                ret = recv(_conn, ((char*)buf + start), 1, 0);
                 start += ret;
                 if (start >= max)
                     return false;
 
-            } while (ret > 0 && strcmp((char*)buf + start - 2, "\r\n") != 0);
+				if (start >= 2 && strcmp((char*)buf + start - 2, "\r\n")==0) {
+                    return true;
+                }
+
+            } while (ret > 0);
             
             return start > 0;
         }
