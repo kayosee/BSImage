@@ -109,7 +109,7 @@ bool WriteImage(TcpClientSocket* tcpClient, const char* path, int size) {
 }
 
 extern "C" __declspec(dllexport)
-int GetImage(const  char* host, short port,const char* dir, const  char* fileName, const char* savePath) {
+int GetImageEx(const  char* host, short port,const char* dir, const  char* fileName, const char* savePath) {
 	TcpClientSocket tcpClient(host, port);
 	tcpClient.openConnection();
 
@@ -117,12 +117,14 @@ int GetImage(const  char* host, short port,const char* dir, const  char* fileNam
 	ZeroMemory(buffer, BUFFER_SIZE);
 	const char* data = "10006:\r\n";
 	if (!tcpClient.sendData((void*)data, strlen(data))) {
+		tcpClient.closeConnection();
 		return 1;
 	}
 
 	ZeroMemory(buffer, BUFFER_SIZE);
 	tcpClient.receiveLine(buffer, BUFFER_SIZE);
 	if (strcmp(buffer, "20006:\r\n") != 0) {
+		tcpClient.closeConnection();
 		return 2;
 	}
 
@@ -133,6 +135,7 @@ int GetImage(const  char* host, short port,const char* dir, const  char* fileNam
 	strcat(cmd, fileName);
 	strcat(cmd, "\r\n");
 	if (!tcpClient.sendData(cmd, strlen(cmd))) {
+		tcpClient.closeConnection();
 		return 3;
 	}
 
@@ -144,12 +147,14 @@ int GetImage(const  char* host, short port,const char* dir, const  char* fileNam
 	ZeroMemory(buffer, BUFFER_SIZE);
 	tcpClient.receiveLine(buffer, BUFFER_SIZE);
 	if (strcmp(buffer, result) > 0) {
+		tcpClient.closeConnection();
 		return 4;
 	}
 
 	ZeroMemory(buffer, BUFFER_SIZE);
 	tcpClient.receiveLine(buffer, BUFFER_SIZE);
 	if (strcmp(buffer, "END\r\n") > 0) {
+		tcpClient.closeConnection();
 		return 5;
 	}
 
@@ -158,12 +163,14 @@ int GetImage(const  char* host, short port,const char* dir, const  char* fileNam
 	ZeroMemory(cmd, BUFFER_SIZE);
 	strcpy(cmd, "10001:\r\n");
 	if (!tcpClient.sendData(cmd, strlen(cmd))) {
+		tcpClient.closeConnection();
 		return 6;
 	}
 
 	ZeroMemory(buffer, BUFFER_SIZE);
 	tcpClient.receiveLine(buffer, BUFFER_SIZE);
 	if (strcmp(buffer, "10002:\r\n") != 0) {
+		tcpClient.closeConnection();
 		return 7;
 	}
 
@@ -175,6 +182,7 @@ int GetImage(const  char* host, short port,const char* dir, const  char* fileNam
 	memcpy(&cmd[0x8d], dir, strlen(dir));
 	memcpy(&cmd[0xf1], dir, strlen(dir));
 	if (!tcpClient.sendData(cmd, 1048)) {
+		tcpClient.closeConnection();
 		return 8;
 	}
 
@@ -183,6 +191,7 @@ int GetImage(const  char* host, short port,const char* dir, const  char* fileNam
 
 	char* ptr = strchr(buffer, ':');
 	if (ptr == NULL) {
+		tcpClient.closeConnection();
 		return 9;
 	}
 
@@ -190,6 +199,7 @@ int GetImage(const  char* host, short port,const char* dir, const  char* fileNam
 	ZeroMemory(cmd, BUFFER_SIZE);
 	strcpy(cmd, "10005:0\r\n");
 	if (!tcpClient.sendData(cmd, strlen(cmd))) {
+		tcpClient.closeConnection();
 		return 10;
 	}
 
@@ -197,8 +207,15 @@ int GetImage(const  char* host, short port,const char* dir, const  char* fileNam
 	delete[] buffer;
 
 	if (!WriteImage(&tcpClient, savePath, size)) {
+		tcpClient.closeConnection();
 		return 11;
 	}
 
+	tcpClient.closeConnection();
 	return 0;
+}
+
+extern "C" __declspec(dllexport)
+int GetImage(const  char* host, short port, const  char* fileName, const char* savePath) {
+	return GetImageEx(host, port,"ProductPic\\", fileName, savePath);
 }
